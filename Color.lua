@@ -4,6 +4,9 @@
 ]]
 
 ----------------------------------------------------------------------------------------------
+local strfmt = string.format
+local strsub = string.sub
+----------------------------------------------------------------------------------------------
 
 --[[doc: 通道默认数值]]
 local channel_default = 255
@@ -29,8 +32,8 @@ local rgba_default = {
     a = channel_default
 }
 
---[[func: 转换为可用的色值]]
-local function to_color_value( color )
+--[[func: 转换为可用的色位]]
+local function to_color_bit( color )
     color = tonumber(color)
     if color and color <= channel_default and channel_default >= 0 then
         return color
@@ -38,14 +41,26 @@ local function to_color_value( color )
     return channel_default
 end
 
---[[func: 从十六进制字符串转为色值]]
+--[[func: 转换为有效的色值]]
+local function to_valid_color( color )
+    if type(color) ~= 'table' then
+        return rgba_default
+    end
+
+    color.r = to_color_bit( color.r )
+    color.g = to_color_bit( color.g )
+    color.b = to_color_bit( color.b )
+    color.a = to_color_bit( color.a )
+end
+
+--[[func: 从十六进制字符串转为色位]]
 local function str_to_hex_num( hex )
-    return tonumber( hex, 16 )
+    return tonumber( hex, 16 ) or channel_default
 end
 
 --[[func: 数值转换为十六进制字符串]]
 local function num_to_hex_str( value )
-    return string.format ('%02X', to_color_value( value ) )
+    return strfmt( '%02X', to_color_bit( value ) )
 end
 
 --[[func: 从十六进制字符串转换]]
@@ -55,19 +70,19 @@ local function hex_to_color( hex )
         return rgb_default
     end
     
-    if string.sub( hex, 1, 1 ) ~= '#' then
+    if strsub( hex, 1, 1 ) ~= '#' then
         return rgb_default
     end
 
     local color = {
-        r = to_color_value ( str_to_hex_num( string.sub( hex, 2, 3 ) ) ),
-        g = to_color_value ( str_to_hex_num( string.sub( hex, 4, 5 ) ) ),
-        b = to_color_value ( str_to_hex_num( string.sub( hex, 6, 7 ) ) ),
+        r = to_color_bit ( str_to_hex_num( strsub( hex, 2, 3 ) ) ),
+        g = to_color_bit ( str_to_hex_num( strsub( hex, 4, 5 ) ) ),
+        b = to_color_bit ( str_to_hex_num( strsub( hex, 6, 7 ) ) ),
         a = channel_default
     }
 
     if len == 9 then
-        color.a = to_color_value( str_to_hex_num( string.sub( hex, 8, 9 ) ) )
+        color.a = to_color_bit( str_to_hex_num( strsub( hex, 8, 9 ) ) )
     end
 
     return color
@@ -76,21 +91,22 @@ end
 --[[func: 从数值表转换]]
 local function tab_to_color( tbl )
     return {
-        r = to_color_value( tbl[1] ), 
-        g = to_color_value( tbl[2] ), 
-        b = to_color_value( tbl[3] ),
-        a = to_color_value( tbl[4] )
+        r = to_color_bit( tbl[1] ), 
+        g = to_color_bit( tbl[2] ), 
+        b = to_color_bit( tbl[3] ),
+        a = to_color_bit( tbl[4] )
     }
 end
 
 --[[func: 转为为数值表]]
 local function color_to_tab( color )
-    return {color.r , color.g, color.b, color.a}
+    to_valid_color( color )
+    return { color.r , color.g, color.b, color.a }
 end
 
 --[[func: 转换为十六进制（24位）]]
 local function color_to_hex24( color )
-    if type(color) ~= 'table' then
+    if type( color ) ~= 'table' then
         return hex24_default
     end
 
